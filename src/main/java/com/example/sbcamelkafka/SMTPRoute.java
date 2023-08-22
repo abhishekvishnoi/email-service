@@ -4,11 +4,14 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.attachment.AttachmentMessage;
 import org.apache.camel.builder.RouteBuilder;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
 import javax.activation.DataHandler;
 import javax.activation.FileDataSource;
 import java.io.File;
+import java.io.InputStream;
 
 @Component
 public class SMTPRoute extends RouteBuilder {
@@ -27,9 +30,13 @@ public class SMTPRoute extends RouteBuilder {
                     public void process(Exchange exchange) throws Exception {
                         AttachmentMessage attMsg = exchange.getIn(AttachmentMessage.class);
 
+                        Resource resource = new ClassPathResource("sample.ics");
+                        InputStream input = resource.getInputStream();
+                        File file = resource.getFile();
+
                        // File file = new File("classpath:sample.ics");
 
-                        File file = new File("/Users/abvishno/workspaces/indigo/email-notification-service/src/main/resources/sample.ics");
+                      //  File file = new File("classpath:sample.ics");
 
                         attMsg.addAttachment("message1.xml",
                                 new DataHandler(new FileDataSource(file)));
