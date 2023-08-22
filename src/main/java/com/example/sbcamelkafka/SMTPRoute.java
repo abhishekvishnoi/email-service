@@ -19,31 +19,26 @@ public class SMTPRoute extends RouteBuilder {
     @Override
     public void configure() throws Exception {
 
+        Processor processor = new Processor() {
+            @Override
+            public void process(Exchange exchange) throws Exception {
+                AttachmentMessage attMsg = exchange.getIn(AttachmentMessage.class);
+                Resource resource = new ClassPathResource("sample.ics");
+                InputStream input = resource.getInputStream();
+                File file = resource.getFile();
+                attMsg.addAttachment("meeting-invite",
+                        new DataHandler(new FileDataSource(file)));
+                exchange.getIn().getBody();
+            }
+        };
+
         from("kafka:{{topic}}?brokers={{broker}}")
                 .log("Message received from Kafka : ${body} on the topic ${headers[kafka.TOPIC]}")
                 .setHeader("From").jsonpath("$.message.fromEmail")
                 .setHeader("To").jsonpath("$.message.toEmail")
                 .setHeader("Subject").jsonpath("$.message.subject")
                 .setBody(jsonpath("$.message.body"))
-                .process(new Processor() {
-                    @Override
-                    public void process(Exchange exchange) throws Exception {
-                        AttachmentMessage attMsg = exchange.getIn(AttachmentMessage.class);
-
-                        Resource resource = new ClassPathResource("sample.ics");
-                        InputStream input = resource.getInputStream();
-                        File file = resource.getFile();
-
-                       // File file = new File("classpath:sample.ics");
-
-                      //  File file = new File("classpath:sample.ics");
-
-                        attMsg.addAttachment("message1.xml",
-                                new DataHandler(new FileDataSource(file)));
-
-                        exchange.getIn().getBody();
-                    }
-                })
+                .process(processor)
                 .to("smtp://smtp.freesmtpservers.com:25");
         
     }
