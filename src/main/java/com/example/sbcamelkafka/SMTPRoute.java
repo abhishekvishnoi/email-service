@@ -9,6 +9,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
 import javax.activation.DataHandler;
+import javax.activation.DataSource;
 import javax.activation.FileDataSource;
 import java.io.File;
 import java.io.InputStream;
@@ -28,7 +29,11 @@ public class SMTPRoute extends RouteBuilder {
                 File file = resource.getFile();
                 attMsg.addAttachment("meeting-invite",
                         new DataHandler(new FileDataSource(file)));
-                exchange.getIn().getBody();
+
+
+             //   DataSource ds = new
+
+              //  exchange.getIn().getBody();
             }
         };
 
