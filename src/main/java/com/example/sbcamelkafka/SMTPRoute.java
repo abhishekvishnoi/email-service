@@ -14,6 +14,7 @@ import javax.activation.DataSource;
 import javax.activation.FileDataSource;
 import java.io.File;
 import java.io.InputStream;
+import java.util.Base64;
 
 @Component
 public class SMTPRoute extends RouteBuilder {
@@ -24,46 +25,46 @@ public class SMTPRoute extends RouteBuilder {
         Processor processor = new Processor() {
             @Override
             public void process(Exchange exchange) throws Exception {
+                //20130802T103400
+                //yyyymmddTHHmmss
 
-              String content =  exchange.getIn().getHeader("ics" , String.class);
+
+                byte[] decodedBytes = Base64.getDecoder().decode(exchange.getIn().getBody(String.class));
+                String decodedHTMLbody = new String(decodedBytes);
+                exchange.getIn().setBody(decodedHTMLbody);
+
+                String content =  exchange.getIn().getHeader("ics" , String.class);
+                String meetingTimeFrom =  exchange.getIn().getHeader("meetingTimeFrom" , String.class);
+                String meetingTimeTo =  exchange.getIn().getHeader("meetingTimeTo" , String.class);
+                String meetingLocation =  exchange.getIn().getHeader("meetingLocation" , String.class);
+
+                String.format(content ,meetingTimeFrom ,meetingTimeTo , meetingLocation , meetingLocation);
 
                 AttachmentMessage attMsg = exchange.getIn(AttachmentMessage.class);
-
-              //  String content = "This is the content of the string.";
-
-                // Convert the string to a byte array
                 byte[] byteArray = content.getBytes();
-
-                // Create a DataSource from the byte array
                 DataSource dataSource = new ByteArrayDataSource(byteArray, "text/plain");
-
-                // Create a DataHandler from the DataSource
-                DataHandler dataHandler = new DataHandler(dataSource);
-
-
-                //InputStream input = getClass().getResourceAsStream("/sample.ics");
                 Resource resource = new ClassPathResource("sample.ics");
-                File file = resource.getFile();
                 attMsg.addAttachment("meeting-invite",
                         new DataHandler(dataSource));
 
 
-
-             //   DataSource ds = new
-              //  exchange.getIn().getBody();
             }
         };
 
         from("kafka:{{topic}}?brokers={{broker}}")
                 .log("Message received from Kafka : ${body} on the topic ${headers[kafka.TOPIC]}")
-               // .log("{{mail.ics}}")
                 .setHeader("ics").simple("{{mail.ics}}")
+                .setHeader("From").jsonpath("$.message.fromEmail")
+                .setHeader("meetingTimeFrom").jsonpath("$.meetingTimeFrom")
+                .setHeader("meetingTimeTo").jsonpath("$.meetingTimeTo")
+                .setHeader("meetingLocation").jsonpath("$.meetingLocation")
+
                 .setHeader("From").jsonpath("$.message.fromEmail")
                 .setHeader("To").jsonpath("$.message.toEmail")
                 .setHeader("Subject").jsonpath("$.message.subject")
                 .setBody(jsonpath("$.message.body"))
                 .process(processor)
-                .to("smtp://smtp.freesmtpservers.com:25");
+                .to("smtp://{{smtp.server}}:{{smtp.port}}");
         
     }
 }
