@@ -11,9 +11,6 @@ import org.springframework.stereotype.Component;
 
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
-import javax.activation.FileDataSource;
-import java.io.File;
-import java.io.InputStream;
 import java.util.Base64;
 
 @Component
@@ -25,27 +22,24 @@ public class SMTPRoute extends RouteBuilder {
         Processor processor = new Processor() {
             @Override
             public void process(Exchange exchange) throws Exception {
-                //20130802T103400
-                //yyyymmddTHHmmss
 
+                exchange.getIn().setBody(new String(Base64.getDecoder()
+                        .decode(exchange.getIn().getBody(String.class))));
 
-                byte[] decodedBytes = Base64.getDecoder().decode(exchange.getIn().getBody(String.class));
-                String decodedHTMLbody = new String(decodedBytes);
-                exchange.getIn().setBody(decodedHTMLbody);
+                String attchementContent =  exchange.getIn().getHeader("ics" , String.class);
 
-                String content =  exchange.getIn().getHeader("ics" , String.class);
-                String meetingTimeFrom =  exchange.getIn().getHeader("meetingTimeFrom" , String.class);
-                String meetingTimeTo =  exchange.getIn().getHeader("meetingTimeTo" , String.class);
-                String meetingLocation =  exchange.getIn().getHeader("meetingLocation" , String.class);
+                attchementContent = String.format(attchementContent ,
+                        exchange.getIn().getHeader("meetingTimeFrom" , String.class) ,
+                        exchange.getIn().getHeader("meetingTimeTo" , String.class) ,
+                        exchange.getIn().getHeader("meetingLocation" , String.class) ,
+                        exchange.getIn().getHeader("meetingLocation" , String.class));
 
-                String.format(content ,meetingTimeFrom ,meetingTimeTo , meetingLocation , meetingLocation);
 
                 AttachmentMessage attMsg = exchange.getIn(AttachmentMessage.class);
-                byte[] byteArray = content.getBytes();
-                DataSource dataSource = new ByteArrayDataSource(byteArray, "text/plain");
-                Resource resource = new ClassPathResource("sample.ics");
+
                 attMsg.addAttachment("meeting-invite",
-                        new DataHandler(dataSource));
+                        new DataHandler( new ByteArrayDataSource(attchementContent.getBytes(),
+                                "text/plain")));
 
 
             }
@@ -58,13 +52,12 @@ public class SMTPRoute extends RouteBuilder {
                 .setHeader("meetingTimeFrom").jsonpath("$.meetingTimeFrom")
                 .setHeader("meetingTimeTo").jsonpath("$.meetingTimeTo")
                 .setHeader("meetingLocation").jsonpath("$.meetingLocation")
-
                 .setHeader("From").jsonpath("$.message.fromEmail")
                 .setHeader("To").jsonpath("$.message.toEmail")
                 .setHeader("Subject").jsonpath("$.message.subject")
                 .setBody(jsonpath("$.message.body"))
                 .process(processor)
-                .to("smtp://{{smtp.server}}:{{smtp.port}}");
+                .to("smtp://{{smtp.server}}:{{smtp.port}}?contentType=text/html");
         
     }
 }
