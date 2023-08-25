@@ -5,12 +5,9 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.attachment.AttachmentMessage;
 import org.apache.camel.builder.RouteBuilder;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
 import javax.activation.DataHandler;
-import javax.activation.DataSource;
 import java.util.Base64;
 
 @Component
@@ -34,7 +31,6 @@ public class SMTPRoute extends RouteBuilder {
                         exchange.getIn().getHeader("meetingLocation" , String.class) ,
                         exchange.getIn().getHeader("meetingLocation" , String.class));
 
-
                 AttachmentMessage attMsg = exchange.getIn(AttachmentMessage.class);
 
                 attMsg.addAttachment("meeting-invite",
@@ -46,7 +42,7 @@ public class SMTPRoute extends RouteBuilder {
         };
 
         from("kafka:{{topic}}?brokers={{broker}}")
-                .log("Message received from Kafka : ${body} on the topic ${headers[kafka.TOPIC]}")
+                .log("Email Message received from Kafka : on the topic ${headers[kafka.TOPIC]}")
                 .setHeader("ics").simple("{{mail.ics}}")
                 .setHeader("From").jsonpath("$.message.fromEmail")
                 .setHeader("meetingTimeFrom").jsonpath("$.meetingTimeFrom")
@@ -58,6 +54,7 @@ public class SMTPRoute extends RouteBuilder {
                 .setHeader("Subject").jsonpath("$.message.subject")
                 .setBody(jsonpath("$.message.body"))
                 .process(processor)
+                .log("Sending Email Message to ${headers[To]} cc to ${headers[Cc]}")
                 .to("smtp://{{smtp.server}}:{{smtp.port}}?contentType=text/html");
         
     }
