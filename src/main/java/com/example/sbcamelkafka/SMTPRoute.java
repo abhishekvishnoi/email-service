@@ -54,6 +54,7 @@ public class SMTPRoute extends RouteBuilder {
                 .setHeader("meetingLocation").jsonpath("$.meetingLocation")
                 .setHeader("From").jsonpath("$.message.fromEmail")
                 .setHeader("To").jsonpath("$.message.toEmail")
+                .setHeader("Cc").jsonpath("$.message.ccEmail")
                 .setHeader("Subject").jsonpath("$.message.subject")
                 .setBody(jsonpath("$.message.body"))
                 .process(processor)
