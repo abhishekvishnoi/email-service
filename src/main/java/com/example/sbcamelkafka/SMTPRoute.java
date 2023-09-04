@@ -33,7 +33,7 @@ public class SMTPRoute extends RouteBuilder {
 
                 AttachmentMessage attMsg = exchange.getIn(AttachmentMessage.class);
 
-                attMsg.addAttachment("meeting-invite",
+                attMsg.addAttachment("meeting-invite.ics",
                         new DataHandler( new ByteArrayDataSource(attchementContent.getBytes(),
                                 "text/plain")));
 
